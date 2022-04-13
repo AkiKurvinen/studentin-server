@@ -6,6 +6,7 @@ import HttpError from './http-error.js';
 import bcrypt from 'bcryptjs';
 import pool from './db.js';
 import jwt from 'jsonwebtoken';
+import 'dotenv/config';
 
 const app = express();
 app.use(cors());
