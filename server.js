@@ -1,17 +1,15 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import morgan from 'morgan';
-import cors from 'cors';
-import HttpError from './http-error.js';
-import bcrypt from 'bcryptjs';
-import pool from './db.js';
-import jwt from 'jsonwebtoken';
-import 'dotenv/config';
-
+require('dotenv').config();
+const express = require('express');
+const PORT = process.env.PORT || 8080;
+const morgan = require('morgan');
+const pool = require('./db');
+const cors = require('cors');
+const HttpError = require('./http-error.js').HttpError;
 const app = express();
+
+app.use(morgan('dev'));
+app.use(express.json());
 app.use(cors());
-app.use(bodyParser.json());
-app.use(morgan('combined'));
 
 // CREATE
 // users
@@ -565,11 +563,5 @@ app.use((error, req, res, next) => {
   res.status(error.code || 500);
   res.json({ message: error.message || 'Unknown error occured' });
 });
-const port = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(port, () => {
-    console.log(`API is running on port ${port}`);
-  });
-}
 
-export default app;
+app.listen(PORT, () => console.log('API is running in port ', +PORT));
