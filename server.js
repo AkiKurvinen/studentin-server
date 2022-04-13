@@ -6,11 +6,11 @@ const pool = require('./db');
 const cors = require('cors');
 const HttpError = require('./http-error.js').HttpError;
 const app = express();
-
+const bcrypt = require('bcrypt');
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cors());
-
+const jwt = require('jsonwebtoken');
 // CREATE
 // users
 const addUser = async (req, res, next) => {
