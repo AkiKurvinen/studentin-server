@@ -1,0 +1,9 @@
+{
+  "env": {
+    "PG_USER": "dbuser",
+    "PG_PASSWORD": "dbpass",
+    "PG_HOST": "localhost",
+    "PG_PORT": 5432,
+    "PG_DATABASE": "database"
+  }
+}
