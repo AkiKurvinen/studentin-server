@@ -480,6 +480,41 @@ const updateProjectField = async (req, res, next) => {
 };
 app.patch('/api/update/project/', updateProjectField);
 // DELETE
+const deleteUserMemberships = async (req, res, next) => {
+  const uid = parseInt(req.body.id);
+  const memberships = await pool.query(
+    'DELETE FROM memberships WHERE user_id = $1;',
+    [uid]
+  );
+
+  const checkMemberships = await pool.query(
+    'SELECT id FROM memberships WHERE user_id = $1',
+    [uid]
+  );
+  if (checkMemberships.rows.length !== 0) {
+    res.json({ failed: 'Cannot delete user memberships.' });
+  } else {
+    res.json({ success: `User ${uid} talents memberships.` });
+  }
+};
+app.delete('/api/users/memberships/', deleteUserMemberships);
+const deleteUserTalents = async (req, res, next) => {
+  const uid = parseInt(req.body.id);
+  const talents = await pool.query('DELETE FROM talents WHERE user_id = $1;', [
+    uid,
+  ]);
+
+  const checkTalents = await pool.query(
+    'SELECT id FROM talents WHERE user_id = $1',
+    [uid]
+  );
+  if (checkTalents.rows.length !== 0) {
+    res.json({ failed: 'Cannot delete user talents.' });
+  } else {
+    res.json({ success: `User ${uid} talents deleted.` });
+  }
+};
+app.delete('/api/users/talents/', deleteUserTalents);
 const deleteUserById = async (req, res, next) => {
   const uid = parseInt(req.body.id);
 
