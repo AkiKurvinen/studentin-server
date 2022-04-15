@@ -1,5 +1,5 @@
 import { expect } from '@jest/globals';
-import pool from './db.js';
+import pool from './db';
 import supertest from 'supertest';
 import app from './server.js';
 
@@ -33,6 +33,22 @@ test('POST /api/users/', async () => {
   expect(response.body.username).toBeTruthy();
   expect(response.body.token).toBeTruthy();
 });
+test('POST /api/users/', async () => {
+  const data = {
+    username: 'testUser',
+    email: 'test.user@mail.com',
+    password: 'password',
+    title: 'student',
+  };
+  const response = await supertest(app)
+    .post('/api/users/')
+    .set('Accept', 'application/json')
+    .send(data);
+
+  expect(response.status).toEqual(500);
+  expect(response.body.message).toEqual('Username already taken');
+});
+
 test('POST /api/projects/', async () => {
   await pool.query('DELETE FROM projects WHERE name=$1', ['Test_project']);
   const data = {
@@ -70,7 +86,7 @@ test('POST /api/memberships/', async () => {
   expect(response.status).toEqual(201);
   expect(response.body.response).toEqual('Membership added');
 });
-/*
+
 test('POST /api/skills/', async () => {
   await pool.query('DELETE FROM skills WHERE skill=$1', ['test_skill']);
 
@@ -87,7 +103,7 @@ test('POST /api/skills/', async () => {
   expect(response.status).toEqual(201);
   expect(response.body.id).toBeTruthy();
 });
-*/
+
 test('POST /api/talents/', async () => {
   const user_id = await pool.query('SELECT id FROM users WHERE username=$1', [
     'testUser',

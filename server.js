@@ -1,16 +1,17 @@
-require('dotenv').config();
-const express = require('express');
-const PORT = process.env.PORT || 8080;
-const morgan = require('morgan');
-const pool = require('./db');
-const cors = require('cors');
-const HttpError = require('./http-error.js').HttpError;
+import express from 'express';
+import morgan from 'morgan';
+import cors from 'cors';
+import HttpError from './http-error.js';
+import bcrypt from 'bcryptjs';
+import pool from './db.js';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
+
 const app = express();
-const bcrypt = require('bcrypt');
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cors());
-const jwt = require('jsonwebtoken');
 // CREATE
 // users
 const addUser = async (req, res, next) => {
@@ -599,4 +600,7 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || 'Unknown error occured' });
 });
 
-app.listen(PORT, () => console.log('API is running in port ', +PORT));
+app.listen(process.env.PORT, () =>
+  console.log('API is running in port ', +process.env.PORT)
+);
+export default app;
