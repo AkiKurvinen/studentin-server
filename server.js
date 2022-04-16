@@ -5,9 +5,11 @@ import HttpError from './http-error.js';
 import bcrypt from 'bcryptjs';
 import pool from './db.js';
 import jwt from 'jsonwebtoken';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from './swagger.json';
 import dotenv from 'dotenv';
 dotenv.config();
-
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 const app = express();
 app.use(morgan('dev'));
 app.use(express.json());
@@ -188,9 +190,9 @@ const getUserById = async (req, res, next) => {
     [uid]
   );
   if (users.rowCount == 0) {
-    res.json({ error: 'no user by that id' });
+    res.status(404).json({ error: 'No user by that id' });
   } else {
-    res.json({ users: users.rows });
+    res.status(200).json({ users: users.rows });
   }
 };
 app.get('/api/users/:id', getUserById);
@@ -202,9 +204,9 @@ const findUserBynameEmail = async (req, res, next) => {
     `SELECT id, username, email, fname, lname, school FROM users WHERE LOWER(username) LIKE LOWER('%${name}%') OR LOWER(email) LIKE LOWER('%${name}%') ORDER BY id ASC`
   );
   if (users.rowCount == 0) {
-    res.json({ error: 'no users found' });
+    res.status(404).json({ error: 'no users found' });
   } else {
-    res.json({ users: users.rows });
+    res.status(200).json({ users: users.rows });
   }
 };
 app.get('/api/find/:name', findUserBynameEmail);
@@ -215,9 +217,9 @@ const findProjectByName = async (req, res, next) => {
     `SELECT * FROM projects WHERE LOWER(name) LIKE LOWER('%${name}%') ORDER BY id ASC`
   );
   if (projects.rowCount == 0) {
-    res.json({ error: 'no projects found' });
+    res.status(404).json({ error: 'no projects found' });
   } else {
-    res.json({ projects: projects.rows });
+    res.status(200).json({ projects: projects.rows });
   }
 };
 app.get('/api/find/projects/:project', findProjectByName);
@@ -242,7 +244,7 @@ const getUsers = async (req, res, next) => {
   const users = await pool.query(
     'SELECT id, username, email, fname, lname, school FROM users ORDER BY id ASC'
   );
-  res.json({ users: users.rows });
+  res.status(200).json({ users: users.rows });
 };
 app.get('/api/users/', getUsers);
 const getProjectMembers = async (req, res, next) => {
@@ -255,7 +257,7 @@ const getProjectMembers = async (req, res, next) => {
   WHERE memberships.project_id= $1`,
     [pid]
   );
-  res.json({ members: members.rows });
+  res.status(200).json({ members: members.rows });
 };
 app.get('/api/members/:pid', getProjectMembers);
 const loginUser = async (req, res, next) => {
@@ -278,7 +280,7 @@ const loginUser = async (req, res, next) => {
     }
     if (!isValidPassword) {
       res.json({ error: 'Wrong username or password' });
-      new HttpError('Could not log you in, credetials might be wrong', 401);
+      new HttpError('Could not log you in, credetials might be wrong', 500);
     } else {
       const users = await pool.query(
         'SELECT * FROM users WHERE username = $1 ORDER BY id ASC',
@@ -314,11 +316,11 @@ const getAllProjects = async (req, res, next) => {
   const allProjects = await pool.query('SELECT * FROM projects LIMIT 50');
 
   if (allProjects.rowCount == 0) {
-    res.json({
+    res.status(404).json({
       error: 'No projects found',
     });
   }
-  res.json({
+  res.status(200).json({
     projects: allProjects.rows,
   });
 };
@@ -335,11 +337,11 @@ const getMyProjects = async (req, res, next) => {
   );
 
   if (myProjects.rowCount == 0) {
-    res.json({
+    res.status(404).json({
       error: 'No projects found',
     });
   } else {
-    res.json({ projects: myProjects.rows });
+    res.status(200).json({ projects: myProjects.rows });
   }
 };
 app.get('/api/myprojects/:uid', getMyProjects);
@@ -356,7 +358,7 @@ const getUserSkills = async (req, res, next) => {
   );
 
   if (myskills.rowCount == 0) {
-    res.status(200).json({
+    res.status(404).json({
       error: 'No skills added',
     });
   } else {
@@ -375,7 +377,7 @@ const findSkillBySkillname = async (req, res, next) => {
   );
 
   if (myskills.rowCount == 0) {
-    res.status(200).json({
+    res.status(404).json({
       skillid: 0,
     });
   } else {
@@ -406,7 +408,7 @@ const updateUser = async (req, res, next) => {
     'SELECT id, username, email, title, fname, lname, school  FROM users WHERE id = $1 ORDER BY id ASC',
     [uid]
   );
-  res.json({ users: checkUsers.rows });
+  res.status(200).json({ users: checkUsers.rows });
 };
 app.patch('/api/users/', updateUser);
 
@@ -434,14 +436,14 @@ const updateUserField = async (req, res, next) => {
       [uid]
     );
     if (res.statusCode == 200 && check.rowCount > 0) {
-      res.json({
+      res.status(200).json({
         success: 'Data updated',
       });
     } else {
-      res.json({ error: 'Data not updated' });
+      res.status(500).json({ error: 'Data not updated' });
     }
   } else {
-    res.json({ error: 'Data not updated, no action' });
+    res.status(404).json({ error: 'Data not updated, no action' });
   }
 };
 app.patch('/api/update/userdata/', updateUserField);
@@ -469,14 +471,14 @@ const updateProjectField = async (req, res, next) => {
       [pid]
     );
     if (res.statusCode == 200 && check.rowCount > 0) {
-      res.json({
+      res.status(200).json({
         success: 'Data updated',
       });
     } else {
-      res.json({ error: 'Data not updated' });
+      res.status(500).json({ error: 'Data not updated' });
     }
   } else {
-    res.json({ error: 'Data not updated, no action' });
+    res.status(404).json({ error: 'Data not updated, no action' });
   }
 };
 app.patch('/api/update/project/', updateProjectField);
@@ -493,9 +495,9 @@ const deleteUserMemberships = async (req, res, next) => {
     [uid]
   );
   if (checkMemberships.rows.length !== 0) {
-    res.json({ failed: 'Cannot delete user memberships.' });
+    res.status(500).json({ failed: 'Cannot delete user memberships.' });
   } else {
-    res.json({ success: `User ${uid} talents memberships.` });
+    res.status(200).json({ success: `User ${uid} talents memberships.` });
   }
 };
 app.delete('/api/users/memberships/', deleteUserMemberships);
@@ -525,9 +527,9 @@ const deleteUserById = async (req, res, next) => {
     [uid]
   );
   if (checkUsers.rows.length !== 0) {
-    res.json({ failed: 'Cannot delete user' });
+    res.status(500).json({ failed: 'Cannot delete user' });
   } else {
-    res.json({ success: `User ${uid} deleted.` });
+    res.status(200).json({ success: `User ${uid} deleted.` });
   }
 };
 app.delete('/api/users/', deleteUserById);
@@ -539,7 +541,9 @@ const deleteEmptyProjects = async (req, res, next) => {
       FROM memberships)`
   );
   if (projects !== undefined) {
-    res.json({ delete: 'OK' });
+    res.status(200).json({ delete: 'OK' });
+  } else {
+    res.status(500).json({ delete: 'FAILED' });
   }
 };
 app.delete('/api/projects/empty/', deleteEmptyProjects);
@@ -556,9 +560,9 @@ const deleteProjectById = async (req, res, next) => {
   ]);
   if (del_memberships.rows.length !== 0 || del_projects.rows.length !== 0) {
     console.log(del_memberships);
-    res.json({ failed: 'Cannot delete project' });
+    res.status(500).json({ failed: 'Cannot delete project' });
   } else {
-    res.json({ success: `Project ${pid} deleted.` });
+    res.status(200).json({ success: `Project ${pid} deleted.` });
   }
 };
 app.delete('/api/project/', deleteProjectById);
@@ -571,7 +575,7 @@ const deleteTalent = async (req, res, next) => {
     [uid, sid]
   );
 
-  res.json({ success: `Talent ${uid} removed.` });
+  res.status(200).json({ success: `Talent ${uid} removed.` });
 };
 app.delete('/api/talents/', deleteTalent);
 
@@ -582,7 +586,6 @@ const deleteMembership = async (req, res, next) => {
     'DELETE FROM memberships WHERE user_id = $1 AND project_id = $2',
     [uid, pid]
   );
-  console.log(memberships);
   res.json({ success: `User ${uid} deleted from project ${pid}.` });
 };
 app.delete('/api/membership/', deleteMembership);
