@@ -10,8 +10,7 @@
   },
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage --forceExit",
-    "start": "node server.js",
-    "swagger-autogen": "node swagger.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -27,8 +26,6 @@
     "nodemon": "^2.0.15",
     "pg": "^8.5.1",
     "pgtools": "^0.3.2",
-    "supertest": "^6.2.2",
-    "swagger-autogen": "^2.21.0",
-    "swagger-ui-express": "^4.3.0"
+    "supertest": "^6.2.2"
   }
 }
