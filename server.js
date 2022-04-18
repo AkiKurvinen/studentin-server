@@ -374,7 +374,7 @@ const findSkillBySkillname = async (req, res, next) => {
   );
 
   if (myskills.rowCount == 0) {
-    res.status(404).json({
+    res.json({
       skillid: 0,
     });
   } else {
