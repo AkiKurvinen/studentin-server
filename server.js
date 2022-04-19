@@ -65,7 +65,59 @@ const addUser = async (req, res, next) => {
   }
 };
 app.post('/api/users/', addUser);
+const addGoogleUser = async (req, res, next) => {
+  if (req.body.googleid == null) {
+    return next(new HttpError('Google account missig', 500));
+  }
+  const userExist = await pool.query(
+    'SELECT id FROM users WHERE username = $1',
+    [req.body.username]
+  );
 
+  if (userExist.rowCount > 0) {
+    return next(
+      new HttpError(
+        'This Google account is already registered. Try login.',
+        500
+      )
+    );
+  }
+
+  const result = await pool.query(
+    'INSERT INTO users (username, email, title, selector) VALUES ($1,$2,$3,$4)',
+    [req.body.googleid, req.body.email, req.body.title, req.body.googleid]
+  );
+
+  if (result) {
+    const users = await pool.query(
+      'SELECT id, username, email, fname, lname, school  FROM users WHERE username = $1 ORDER BY id ASC',
+      [req.body.googleid]
+    );
+
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: users.rows[0].id,
+          username: users.rows[0].username,
+        },
+        'secret_only_the_server_knows', // secret key
+        { expiresIn: '1h' } // options like an experation time
+      );
+    } catch (err) {
+      return next(new HttpError('Signup failed, please try again', 500));
+    }
+
+    res.status(201).json({
+      userId: users.rows[0].id,
+      username: users.rows[0].username,
+      token: token,
+    });
+  } else {
+    res.json({ error: 'Could not add user.' });
+  }
+};
+app.post('/api/users/google/', addGoogleUser);
 // projects
 const addProject = async (req, res, next) => {
   let response;
@@ -307,7 +359,42 @@ const loginUser = async (req, res, next) => {
   }
 };
 app.post('/api/login/', loginUser);
+const loginGoogleUser = async (req, res, next) => {
+  //const password = req.body.password;
+  const googleid = req.body.googleid;
 
+  const users = await pool.query(
+    'SELECT * FROM users WHERE selector = $1 ORDER BY id ASC',
+    [googleid]
+  );
+  if (users.rowCount != 0) {
+    const users = await pool.query(
+      'SELECT * FROM users WHERE selector = $1 ORDER BY id ASC',
+      [googleid]
+    );
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: users.rows[0].id,
+          username: users.rows[0].username,
+        },
+        'secret_only_the_server_knows', // secret key
+        { expiresIn: '1h' } // options like an experation time
+      );
+    } catch (err) {
+      return next(new HttpError('Login in failed, please try again', 500));
+    }
+
+    res.status(201).json({
+      userId: users.rows[0].id,
+      username: users.rows[0].username,
+      token: token,
+    });
+    //
+  }
+};
+app.post('/api/login/google/', loginGoogleUser);
 // projects
 const getAllProjects = async (req, res, next) => {
   const allProjects = await pool.query('SELECT * FROM projects LIMIT 50');
