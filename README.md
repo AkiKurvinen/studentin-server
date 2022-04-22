@@ -1,12 +1,14 @@
 # StudentIn Server
 
-| Key               | Value                                                                            |
-| ----------------- | -------------------------------------------------------------------------------- |
-| Owner             | Aki Kurvinen                                                                     |
-| Description       | JSON REST API (Express + Postgres)                                               |
-| Deploy Server     | studentin-server.herokuapp.com                                                   |
-| API Documentation | https://app.swaggerhub.com/apis-docs/Kurvinen/StudentIn/1.0.0/ or doc/index.html |
-| DB Documentation  | doc/StudentIn_db_schema.pdf                                                      |
+| Key               | Value                          |
+| ----------------- | ------------------------------ |
+| Owner             | Aki Kurvinen                   |
+| Description       | JSON REST API  (Express + Postgres)           |
+| Deploy Server     | studentin-server.herokuapp.com |
+| API Documentation | /doc/index.html  |
+| also at Swagger | https://app.swaggerhub.com/apis-docs/Kurvinen/StudentIn/1.0.0/                 |
+| DB Documentation | /doc/StudentIn_db_schema.pdf |
+
 
 ## Installation
 
