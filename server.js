@@ -66,12 +66,13 @@ const addUser = async (req, res, next) => {
 };
 app.post('/api/users/', addUser);
 const addGoogleUser = async (req, res, next) => {
-  if (req.body.googleid == null) {
+  const num = parseInt(req.body.googleid) || 0;
+  if (isNaN(req.body.googleid) || num == 0) {
     return next(new HttpError('Google account missig', 500));
   }
   const userExist = await pool.query(
-    'SELECT id FROM users WHERE username = $1',
-    [req.body.username]
+    'SELECT id FROM users WHERE username = $1 OR selector = $1',
+    [req.body.googleid]
   );
 
   if (userExist.rowCount > 0) {
@@ -84,13 +85,20 @@ const addGoogleUser = async (req, res, next) => {
   }
 
   const result = await pool.query(
-    'INSERT INTO users (username, email, title, selector) VALUES ($1,$2,$3,$4)',
-    [req.body.googleid, req.body.email, req.body.title, req.body.googleid]
+    'INSERT INTO users (fname, lname, username, email, title, selector) VALUES ($1,$2,$3,$4,$5,$6)',
+    [
+      req.body.fname,
+      req.body.lname,
+      req.body.username,
+      req.body.email,
+      req.body.title,
+      req.body.googleid,
+    ]
   );
 
   if (result) {
     const users = await pool.query(
-      'SELECT id, username, email, fname, lname, school  FROM users WHERE username = $1 ORDER BY id ASC',
+      'SELECT id, username, email, fname, lname, school  FROM users WHERE selector = $1 ORDER BY id ASC',
       [req.body.googleid]
     );
 
@@ -117,7 +125,7 @@ const addGoogleUser = async (req, res, next) => {
     res.json({ error: 'Could not add user.' });
   }
 };
-app.post('/api/users/google/', addGoogleUser);
+app.post('/api/google/signup/', addGoogleUser);
 // projects
 const addProject = async (req, res, next) => {
   let response;
@@ -291,7 +299,7 @@ const findPersoinWithSkill = async (req, res, next) => {
 app.get('/api/find/skills/:skill', findPersoinWithSkill);
 const getUsers = async (req, res, next) => {
   const users = await pool.query(
-    'SELECT id, username, email, fname, lname, school FROM users ORDER BY id ASC'
+    'SELECT id, username, email, fname, lname, school, title FROM users ORDER BY id ASC'
   );
   res.status(200).json({ users: users.rows });
 };
@@ -392,9 +400,13 @@ const loginGoogleUser = async (req, res, next) => {
       token: token,
     });
     //
+  } else {
+    res.json({
+      error: 'Account not registered.',
+    });
   }
 };
-app.post('/api/login/google/', loginGoogleUser);
+app.post('/api/google/login/', loginGoogleUser);
 // projects
 const getAllProjects = async (req, res, next) => {
   const allProjects = await pool.query('SELECT * FROM projects LIMIT 50');
