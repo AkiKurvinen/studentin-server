@@ -10,7 +10,20 @@ dotenv.config();
 const app = express();
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(cors());
+// app.use(cors());
+
+app.use(function (req, res, next) {
+  res.header(
+    'Access-Control-Allow-Origin',
+    'https://studentin-client.herokuapp.com/'
+  );
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept'
+  );
+  next();
+});
+
 // CREATE
 // users
 const addUser = async (req, res, next) => {
@@ -48,7 +61,7 @@ const addUser = async (req, res, next) => {
           userId: users.rows[0].id,
           username: users.rows[0].username,
         },
-        'secret_only_the_server_knows', // secret key
+        process.env.JWTKEY, // secret key
         { expiresIn: '1h' } // options like an experation time
       );
     } catch (err) {
@@ -65,7 +78,67 @@ const addUser = async (req, res, next) => {
   }
 };
 app.post('/api/users/', addUser);
+const addGoogleUser = async (req, res, next) => {
+  const num = parseInt(req.body.googleid) || 0;
+  if (isNaN(req.body.googleid) || num == 0) {
+    return next(new HttpError('Google account missig', 500));
+  }
+  const userExist = await pool.query(
+    'SELECT id FROM users WHERE username = $1 OR selector = $1',
+    [req.body.googleid]
+  );
 
+  if (userExist.rowCount > 0) {
+    return next(
+      new HttpError(
+        'This Google account is already registered. Try login.',
+        500
+      )
+    );
+  }
+
+  const result = await pool.query(
+    'INSERT INTO users (fname, lname, username, email, title, selector) VALUES ($1,$2,$3,$4,$5,$6)',
+    [
+      req.body.fname,
+      req.body.lname,
+      req.body.username,
+      req.body.email,
+      req.body.title,
+      req.body.googleid,
+    ]
+  );
+
+  if (result) {
+    const users = await pool.query(
+      'SELECT id, username, email, fname, lname, school  FROM users WHERE selector = $1 ORDER BY id ASC',
+      [req.body.googleid]
+    );
+
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: users.rows[0].id,
+          username: users.rows[0].username,
+        },
+        process.env.JWTKEY, // secret key
+        { expiresIn: '1h' } // options like an experation time
+      );
+    } catch (err) {
+      return next(new HttpError('Signup failed, please try again', 500));
+    }
+
+    res.status(201).json({
+      userId: users.rows[0].id,
+      username: users.rows[0].username,
+      token: token,
+    });
+  } else {
+    res.json({ error: 'Could not add user.' });
+  }
+};
+app.post('/api/google/signup/', addGoogleUser);
 // projects
 const addProject = async (req, res, next) => {
   let response;
@@ -121,27 +194,35 @@ const addMemberships = async (req, res, next) => {
 app.post('/api/memberships/', addMemberships);
 // skills
 const addNewSkill = async (req, res, next) => {
-  const response = await pool.query(
-    'INSERT INTO skills (skill, category) VALUES ($1, $2)',
-    [req.body.skill, req.body.cat]
+  const findSkillExsist = await pool.query(
+    'SELECT id FROM skills WHERE LOWER(skill) = LOWER($1) LIMIT 1',
+    [req.body.skill]
   );
-  if (response.rowCount > 0) {
-    const findSkillID = await pool.query(
-      'SELECT id FROM skills WHERE skill = $1 LIMIT 1',
-      [req.body.skill]
+  if (findSkillExsist.rowCount > 0) {
+    res.status(201).json(findSkillExsist.rows[0].id);
+  } else {
+    const response = await pool.query(
+      'INSERT INTO skills (skill, category) VALUES ($1, $2)',
+      [req.body.skill, req.body.cat]
     );
+    if (response.rowCount > 0) {
+      const findSkillID = await pool.query(
+        'SELECT id FROM skills WHERE skill = $1 LIMIT 1',
+        [req.body.skill]
+      );
 
-    if (findSkillID.rowCount > 0) {
-      console.log(findSkillID.rows[0].id);
-      const newskillid = findSkillID.rows[0].id;
-      res.status(201).json({
-        id: newskillid,
+      if (findSkillID.rowCount > 0) {
+        console.log(findSkillID.rows[0].id);
+        const newskillid = findSkillID.rows[0].id;
+        res.status(201).json({
+          id: newskillid,
+        });
+      }
+    } else {
+      res.status(500).json({
+        response: 'Could not add skill',
       });
     }
-  } else {
-    res.status(500).json({
-      response: 'Could not add skill',
-    });
   }
 };
 app.post('/api/skills/', addNewSkill);
@@ -239,7 +320,7 @@ const findPersoinWithSkill = async (req, res, next) => {
 app.get('/api/find/skills/:skill', findPersoinWithSkill);
 const getUsers = async (req, res, next) => {
   const users = await pool.query(
-    'SELECT id, username, email, fname, lname, school FROM users ORDER BY id ASC'
+    'SELECT id, username, email, fname, lname, school, title FROM users ORDER BY id ASC'
   );
   res.status(200).json({ users: users.rows });
 };
@@ -290,7 +371,7 @@ const loginUser = async (req, res, next) => {
             userId: users.rows[0].id,
             username: users.rows[0].username,
           },
-          'secret_only_the_server_knows', // secret key
+          process.env.JWTKEY, // secret key
           { expiresIn: '1h' } // options like an experation time
         );
       } catch (err) {
@@ -307,7 +388,46 @@ const loginUser = async (req, res, next) => {
   }
 };
 app.post('/api/login/', loginUser);
+const loginGoogleUser = async (req, res, next) => {
+  //const password = req.body.password;
+  const googleid = req.body.googleid;
 
+  const users = await pool.query(
+    'SELECT * FROM users WHERE selector = $1 ORDER BY id ASC',
+    [googleid]
+  );
+  if (users.rowCount != 0) {
+    const users = await pool.query(
+      'SELECT * FROM users WHERE selector = $1 ORDER BY id ASC',
+      [googleid]
+    );
+    let token;
+    try {
+      token = jwt.sign(
+        {
+          userId: users.rows[0].id,
+          username: users.rows[0].username,
+        },
+        process.env.JWTKEY, // secret key
+        { expiresIn: '1h' } // options like an experation time
+      );
+    } catch (err) {
+      return next(new HttpError('Login in failed, please try again', 500));
+    }
+
+    res.status(200).json({
+      userId: users.rows[0].id,
+      username: users.rows[0].username,
+      token: token,
+    });
+    //
+  } else {
+    res.json({
+      error: 'Account not registered.',
+    });
+  }
+};
+app.post('/api/google/login/', loginGoogleUser);
 // projects
 const getAllProjects = async (req, res, next) => {
   const allProjects = await pool.query('SELECT * FROM projects LIMIT 50');

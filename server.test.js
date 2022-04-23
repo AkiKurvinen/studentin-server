@@ -8,7 +8,6 @@ test('POST /api/users/', async () => {
   const user_id = await pool.query('SELECT id FROM users WHERE username=$1', [
     'newtestUser',
   ]);
-  console.log(user_id);
   if (user_id.rowCount > 0) {
     await pool.query('DELETE FROM memberships WHERE role=$1', ['test']);
     await pool.query('DELETE FROM talents WHERE user_id=$1', [
@@ -33,6 +32,19 @@ test('POST /api/users/', async () => {
   expect(response.body.username).toBeTruthy();
   expect(response.body.token).toBeTruthy();
 });
+test('GET /api/myprojects/:uid', async () => {
+  const user_id = await pool.query('SELECT id FROM users WHERE username=$1', [
+    'testUser',
+  ]);
+
+  await supertest(app)
+    .get(`/api/myprojects/${user_id.rows[0].id}`)
+    .expect(404)
+    .then((res) => {
+      expect(res.status).toEqual(404);
+      expect(res.body.error).toEqual('No projects found');
+    });
+});
 test('POST /api/users/', async () => {
   const data = {
     username: 'testUser',
@@ -47,6 +59,47 @@ test('POST /api/users/', async () => {
 
   expect(response.status).toEqual(500);
   expect(response.body.message).toEqual('Username already taken');
+});
+
+// google user
+test('POST /api/google/signup/', async () => {
+  const data = {
+    fname: 'GMan',
+    lname: 'Googler',
+    email: 'gman@gmail.com',
+    username: 'gman1234',
+    title: 'normal',
+    googleid: '0123456789',
+  };
+  const res = await supertest(app)
+    .post('/api/google/signup/')
+    .set('Accept', 'application/json')
+    .send(data);
+
+  expect(res.status).toEqual(201);
+  expect(res.body.username).toEqual(data.username);
+  expect(res.body.userId).toBeTruthy();
+  expect(res.body.password).toBeFalsy();
+});
+test('POST /api/google/signup/', async () => {
+  const data = {
+    fname: 'GMan',
+    lname: 'Googler',
+    email: 'gman@gmail.com',
+    username: 'gman1234',
+    title: 'normal',
+    googleid: '0123456789',
+  };
+
+  const res = await supertest(app)
+    .post('/api/google/signup/')
+    .set('Accept', 'application/json')
+    .send(data);
+
+  expect(res.status).toEqual(500);
+  expect(res.body.message).toEqual(
+    'This Google account is already registered. Try login.'
+  );
 });
 
 test('POST /api/projects/', async () => {
@@ -243,6 +296,22 @@ test('GET /api/members/:pid', async () => {
       expect(res.body.members[0].role).toEqual('test');
     });
 });
+test('POST /api/google/login/', async () => {
+  const data = {
+    googleid: '0123456789',
+  };
+  const user_id = await pool.query('SELECT id FROM users WHERE selector=$1', [
+    data.googleid,
+  ]);
+  console.log(user_id);
+  const response_correct = await supertest(app)
+    .post('/api/google/login/')
+    .set('Accept', 'application/json')
+    .send(data);
+
+  expect(response_correct.status).toEqual(200);
+  expect(response_correct.body.userId).toEqual(user_id.rows[0].id);
+});
 test('POST /api/login/', async () => {
   const user_id = await pool.query('SELECT id FROM users WHERE username=$1', [
     'testUser',
@@ -295,6 +364,7 @@ test('GET /api/projects', async () => {
       expect(Array.isArray(res.body.projects)).toBeTruthy();
     });
 });
+
 test('GET /api/myprojects/:uid', async () => {
   const user_id = await pool.query('SELECT id FROM users WHERE username=$1', [
     'testUser',
@@ -405,7 +475,7 @@ test('PATCH /api/update/userdata/', async () => {
     .set('Accept', 'application/json')
     .send(invalid_action);
 
-  expect(response_1.status).toEqual(200);
+  expect(response_1.status).toEqual(404);
   expect(response_1.body.error).toEqual('Data not updated, no action');
 
   const invalid_user = {
@@ -419,7 +489,7 @@ test('PATCH /api/update/userdata/', async () => {
     .set('Accept', 'application/json')
     .send(invalid_user);
 
-  expect(response_2.status).toEqual(200);
+  expect(response_2.status).toEqual(500);
   expect(response_2.body.error).toEqual('Data not updated');
 });
 test('PATCH /api/update/project/', async () => {
@@ -515,7 +585,8 @@ test('DELETE /api/users/', async () => {
   await pool.query('DELETE FROM talents WHERE user_id=$1', [
     user_id.rows[0].id,
   ]);
-
+  // delete google user
+  await pool.query('DELETE FROM users WHERE selector IS NOT NULL;');
   const data = {
     id: user_id.rows[0].id,
   };
