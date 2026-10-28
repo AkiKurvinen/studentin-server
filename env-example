@@ -1,0 +1,7 @@
+PORT=5000
+PG_HOST=127.0.0.1
+PG_PORT=5432
+PG_USER=dbuser
+PG_PASSWORD=dbpass
+PG_DATABASE=studentdb
+JWTKEY=replace-with-a-random-secret

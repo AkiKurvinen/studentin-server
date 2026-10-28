@@ -5,27 +5,31 @@
   "main": "index.js",
   "type": "module",
   "engines": {
-    "node": "12.x",
-    "npm": "6.14.5"
+    "node": ">=22",
+    "npm": ">=10"
   },
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage --forceExit",
-    "start": "node server.js"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage --forceExit",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.0.1",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^8.6.0",
-    "express": "^4.17.1",
-    "jsonwebtoken": "^8.5.1",
-    "morgan": "^1.10.0",
-    "nodemon": "^2.0.15",
-    "pg": "^8.5.1",
-    "pgtools": "^0.3.2",
-    "supertest": "^6.2.2"
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.12.1",
+    "nodemon": "^3.1.14",
+    "pg": "^8.23.1",
+    "pgtools": "^1.0.1",
+    "supertest": "^7.3.1"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.5.2",
+    "jest": "^30.5.2"
   }
 }

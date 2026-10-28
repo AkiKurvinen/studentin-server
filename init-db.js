@@ -121,9 +121,7 @@ INSERT INTO "talents" ("id", "user_id", "skill_id") VALUES
 (2,	1,	2),
 (5,	1,	5),
 (8,	1,	8),
-(9,	1,	9),
-
-
+(9,	1,	9);
 `,
   (error, results) => {
     if (error) {
