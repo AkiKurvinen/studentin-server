@@ -609,6 +609,12 @@ test('DELETE /api/projects/empty/', async () => {
   expect(response.body.delete).toEqual('OK');
 });
 // OTHER
+test('GET /', async () => {
+  const response = await supertest(app).get('/');
+  expect(response.status).toEqual(200);
+  expect(response.body.message).toEqual('StudentIn Server is running');
+});
+
 test('GET /api/invalid', async () => {
   const response = await supertest(app).get('/api/invalid');
   expect(response.status).toEqual(404);

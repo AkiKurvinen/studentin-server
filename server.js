@@ -708,6 +708,9 @@ const deleteMembership = async (req, res, next) => {
 app.delete('/api/membership/', deleteMembership);
 
 // OTHER
+app.get('/', (req, res) => {
+  res.json({ message: 'StudentIn Server is running' });
+});
 app.use((req, res, next) => {
   throw new HttpError('Could not find this route.', 404);
 });

@@ -16,8 +16,9 @@ $ npm install
 $ docker-compose up -d
 $ node create-db
 $ node init-db
-$ nodemon start
+$ npm run dev
 ```
+See app running http://localhost:5000/  
 
 ## Testing
 
